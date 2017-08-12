@@ -6,12 +6,6 @@ function log_and_exec(){
 	printf "Done!\n"
 }
 
-function init_config() {
-	log_message='Resetting ssh configuration'
-    command="rm -f $HOME/.ssh/config && touch $HOME/.ssh/config && chmod 600 $HOME/.ssh/config"
-	log_and_exec "$log_message" "${command}" 
-}
-
 function get_instance_username(){
     shopt -s nocasematch
     case $1 in
@@ -121,7 +115,6 @@ function menu(){
     PS3='Choose action: '
     select action in "${menu_list[@]}"
     do
-        # echo $action
         case $action in
             'Query Instance')
                 echo
@@ -130,6 +123,7 @@ function menu(){
                 log_message="Querying ${instance_name} for ${property} property"
                 log_and_exec "${log_message}" "printf \"\'${property}\': \'$(query_instance ${instance_name} ${property})\' \n\""
                 echo
+                return 1
                 ;;
             'Start Instance')
                 echo
@@ -137,6 +131,7 @@ function menu(){
                 log_message="Starting instance '${instance_name}'"
                 log_and_exec "${log_message}" "start_instance ${instance_name}"
                 echo
+                return 1
                 ;;
             'Stop Instance')
                 echo
@@ -144,6 +139,7 @@ function menu(){
                 log_message="Stopping instance '${instance_name}'"
                 log_and_exec "${log_message}" "stop_instance ${instance_name}"
                 echo
+                return 1
                 ;;
             'Connect to Instance')
                 echo
@@ -151,10 +147,11 @@ function menu(){
                 log_message="Connecting to '${instance_name}'"
                 log_and_exec "${log_message}" "connect_to_instance ${instance_name}"
                 echo
+                return 1
                 ;;
  
             Quit)
-                break
+                return 0
                 ;;
             *)
                 echo -e 'Invalid choice. Please choose again\n'
@@ -162,8 +159,16 @@ function menu(){
         esac
     done
 
+}
+
+function run(){
+    is_complete=1
+    while [[ $is_complete -gt 0 ]]
+    do
+        menu
+        is_complete=$?
+    done
     echo "Thank you for using the aws setup!"
 }
 
-init_config
-menu
+run
