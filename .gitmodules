@@ -1,0 +1,3 @@
+[submodule "ssh_config_manager"]
+	path = ssh_config_manager
+	url = https://github.com/Spider101/ssh-config-manager.git
