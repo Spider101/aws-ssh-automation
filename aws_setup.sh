@@ -15,8 +15,11 @@ function get_instance_username(){
         *centos*)
             echo 'centos'
             ;;
-        *)
+        *linux*)
             echo 'ec2-user'
+            ;;
+        *)
+            echo 'root'
             ;;
     esac
 }
@@ -31,8 +34,13 @@ function build_ssh_host(){
         image_name=$(aws ec2 describe-images --image-ids ${image_id} | jq '.Images[].Name')
         user=$(get_instance_username "${image_name}")
         
-        read -p "Enter path to access key: " access_key_path
-        echo
+        if [ -z `echo ${path_to_public_key}` ] 
+        then
+            read -p "Enter path to access key: " access_key_path
+            echo
+        else
+            access_key_path=${path_to_public_key}
+        fi
         ssh_config_entry="Host ${1}\n\tHostname ${hostname}\n\tUser ${user}\n\tIdentityFile ${access_key_path}\n"
         echo -e "${ssh_config_entry}" >> $HOME/.ssh/config
         echo -e 'Done\n'
@@ -42,8 +50,9 @@ function build_ssh_host(){
         echo -e 'Done\n'
     fi
 }
+
 function query_instance(){
-    metadata=$(aws ec2 describe-instances --filter "Name=tag:Name,Values=${1}")
+    metadata=$(aws ec2 describe-instances --filter Name=tag:Name,Values=${1})
     echo "${metadata}" | jq ".Reservations[].Instances[].${2}"
 }
 
@@ -121,7 +130,8 @@ function menu(){
                 read -p 'Enter name of instance to query: ' instance_name
                 read -p 'Enter property to query instance: ' property
                 log_message="Querying ${instance_name} for ${property} property"
-                log_and_exec "${log_message}" "printf \"\'${property}\': \'$(query_instance ${instance_name} ${property})\' \n\""
+                # log_and_exec "${log_message}" "printf \"\'${property}\': \'$(query_instance '${instance_name}' ${property})\' \n\""
+                query_instance ${instance_name} ${property}
                 echo
                 return 1
                 ;;
@@ -129,7 +139,7 @@ function menu(){
                 echo
                 read -p 'Enter name of instance: ' instance_name
                 log_message="Starting instance '${instance_name}'"
-                log_and_exec "${log_message}" "start_instance ${instance_name}"
+                log_and_exec "${log_message}" "start_instance '${instance_name}'"
                 echo
                 return 1
                 ;;
@@ -137,7 +147,7 @@ function menu(){
                 echo
                 read -p 'Enter name of instance: ' instance_name
                 log_message="Stopping instance '${instance_name}'"
-                log_and_exec "${log_message}" "stop_instance ${instance_name}"
+                log_and_exec "${log_message}" "stop_instance '${instance_name}'"
                 echo
                 return 1
                 ;;
